@@ -13,6 +13,7 @@ export type ModuleType =
   | 'snmp'        // SNMP管理
   | 'acl'         // ACL/QoS
   | 'ntp'         // NTP时间同步
+  | 'log'          // 日志配置
   | 'custom'      // 自定义命令
 
 // 模块信息
@@ -199,6 +200,27 @@ export interface NtpConfig {
   authKey?: string
 }
 
+// ===== 日志配置 =====
+export interface SyslogServer {
+  host: string
+  port: number
+  facility: string
+  level: string
+}
+
+export interface LogConfig {
+  enabled: boolean
+  enableInfoCenter: boolean
+  defaultLevel: string
+  timestampFormat: 'date' | 'boot' | 'none'
+  bufferSize: number
+  enableSyslog: boolean
+  syslogServers: SyslogServer[]
+  saveToFlash: boolean
+  maxLogFiles: number
+  recordCommands: boolean
+}
+
 // ===== 自定义命令 =====
 export interface CustomCommand {
   title: string
@@ -220,6 +242,7 @@ export interface DeviceTab {
   snmp: SnmpConfig
   acl: AclConfig
   ntp: NtpConfig
+  log: LogConfig
   customCommands: CustomCommand[]
 
   // 各模块启用状态

@@ -9,7 +9,7 @@ import type {
   VendorType, ModuleType, DeviceTab,
   BasicConfig, VlanConfig, StpConfig, DhcpConfig, RouteConfig,
   InterfaceConfig as InterfaceConfType, RemoteConfig, SnmpConfig, AclConfig,
-  NtpConfig, CustomCommand
+  NtpConfig, LogConfig, CustomCommand
 } from '../types'
 import { CommandGenerator } from '../generator/CommandGenerator'
 
@@ -35,10 +35,11 @@ function createDefaultDevice(name: string = '设备1', vendor: VendorType = 'hua
     snmp: { enabled: false, enableAgent: true, version: 'v2c', communities: [{ name: 'public', permission: 'ro' }], sysContact: '', sysLocation: '', trapEnable: false, trapServers: [] },
     acl: { enabled: false, rules: [], applyToInterfaces: [], qosPolicyName: '', rateLimitKbps: 0 },
     ntp: { enabled: false, mode: 'client', servers: 'ntp.aliyun.com', timezone: 'Beijing', summerTime: '', authentication: false },
+    log: { enabled: false, enableInfoCenter: true, defaultLevel: 'informational', timestampFormat: 'date', bufferSize: 512, enableSyslog: false, syslogServers: [], saveToFlash: false, maxLogFiles: 10, recordCommands: true },
     customCommands: [],
     moduleStates: {
       basic: true, vlan: false, stp: false, dhcp: false, route: false,
-      interfaceConf: false, remote: false, snmp: false, acl: false, ntp: false, custom: false
+      interfaceConf: false, remote: false, snmp: false, acl: false, ntp: false, log: false, custom: false
     }
   }
 }
@@ -93,6 +94,7 @@ export const useConfigStore = defineStore('config', () => {
       case 'snmp': return gen.generateSnmp(tab.snmp).join('\n')
       case 'acl': return gen.generateAcl(tab.acl).join('\n')
       case 'ntp': return gen.generateNtp(tab.ntp).join('\n')
+      case 'log': return gen.generateLog(tab.log).join('\n')
       case 'custom': return gen.generateCustom(tab.customCommands).join('\n')
     }
   }
@@ -149,6 +151,7 @@ export const useConfigStore = defineStore('config', () => {
           case 'snmp': activeTab.value.snmp.enabled = enabled; break
           case 'acl': activeTab.value.acl.enabled = enabled; break
           case 'ntp': activeTab.value.ntp.enabled = enabled; break
+          case 'log': activeTab.value.log.enabled = enabled; break
         }
       } else {
         activeTab.value.moduleStates[module] = !activeTab.value.moduleStates[module]

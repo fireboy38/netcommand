@@ -73,7 +73,7 @@
       </div>
       <div class="top-right">
         <!-- 全部复制按钮 -->
-        <el-button type="primary" plain @click="copyAllCommands" :icon="DocumentCopy">
+        <el-button type="primary" plain @click="copyAllCommands" :icon="CopyDocument">
           复制全部命令
         </el-button>
       </div>
@@ -118,7 +118,7 @@
       <aside class="code-panel">
         <div class="code-header">
           <span class="code-title">
-            <el-icon :size="14"><Code /></el-icon>
+            <el-icon :size="14"><Monitor /></el-icon>
             命令预览 - {{ vendorName(store.activeTab?.vendor) }}
           </span>
           <el-button size="small" text type="primary" @click="copyAllCommands">
@@ -152,13 +152,15 @@ import RouteModule from '../modules/RouteModule.vue'
 import InterfaceModule from '../modules/InterfaceModule.vue'
 import RemoteModule from '../modules/RemoteModule.vue'
 import SnmpModule from '../modules/SnmpModule.vue'
+import LogModule from '../modules/LogModule.vue'
 import AclModule from '../modules/AclModule.vue'
 import NtpModule from '../modules/NtpModule.vue'
 import CustomModule from '../modules/CustomModule.vue'
 import { ElMessage } from 'element-plus'
 import {
   Setting, Connection, Share, Monitor, Promotion,
-  Lock, View, Filter, Timer, EditPen
+  Lock, View, Filter, Timer, EditPen,
+  CopyDocument, Download, Plus, Tickets, Notebook
 } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
@@ -177,6 +179,7 @@ const moduleList = [
   { key: 'snmp' as ModuleType, label: 'SNMP', icon: markRaw(View) },
   { key: 'acl' as ModuleType, label: 'ACL/QoS', icon: markRaw(Filter) },
   { key: 'ntp' as ModuleType, label: 'NTP', icon: markRaw(Timer) },
+  { key: 'log' as ModuleType, label: '日志配置', icon: markRaw(Tickets) },
   { key: 'custom' as ModuleType, label: '自定义', icon: markRaw(EditPen) },
 ]
 
@@ -191,6 +194,7 @@ const currentModuleComponent = computed(() => {
     interfaceConf: InterfaceModule,
     remote: RemoteModule,
     snmp: SnmpModule,
+    log: LogModule,
     acl: AclModule,
     ntp: NtpModule,
     custom: CustomModule,

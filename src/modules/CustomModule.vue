@@ -18,7 +18,7 @@
         <div class="custom-header">
           <el-input v-model="cmd.title" placeholder="命令组标题（可选）"
             size="small" style="width:200px;" clearable>
-            <template #prefix><el-icon :size="13"><Document /></el-icon></template>
+            <template #prefix><el-icon :size="13"><EditPen /></el-icon></template>
           </el-input>
           <el-button :icon="Delete" type="danger" text circle size="small"
             @click="store.activeTab?.customCommands.splice(idx,1)" />

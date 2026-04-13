@@ -2,14 +2,12 @@ import type {
   VendorType,
   BasicConfig, VlanConfig, StpConfig, DhcpConfig, RouteConfig,
   InterfaceConfig as InterfaceConfType, RemoteConfig, SnmpConfig, AclConfig,
-  NtpConfig, CustomCommand
+  NtpConfig, LogConfig, CustomCommand
 } from '../types'
 
 /**
  * 新数网络调试工具 (NetCommand)
  * Copyright (c) 2026 四川新数科技有限公司. All rights reserved.
- * 命令生成引擎 - 根据厂商和配置生成对应的CLI命令
- */
  * 命令生成引擎 - 支持华为/锐捷/华三三种厂商语法
  */
 export class CommandGenerator {
@@ -708,6 +706,108 @@ export class CommandGenerator {
     return cmds
   }
 
+  // ========== 日志配置 ==========
+  generateLog(cfg: LogConfig): string[] {
+    if (!cfg.enabled) return []
+    const cmds: string[] = []
+    cmds.push(this.sysView())
+
+    switch (this.vendor) {
+      case 'huawei':
+        // 信息中心
+        if (cfg.enableInfoCenter) cmds.push('info-center enable')
+        else cmds.push('undo info-center enable')
+        // 日志级别
+        if (cfg.defaultLevel) cmds.push(`info-center source default channel loghost level ${cfg.defaultLevel}`)
+        // 时间戳
+        switch (cfg.timestampFormat) {
+          case 'date': cmds.push('info-center timestamp log date'); break
+          case 'boot': cmds.push('info-center timestamp log boot'); break
+          case 'none': cmds.push('info-center timestamp log none'); break
+        }
+        // 缓冲区大小
+        if (cfg.bufferSize) cmds.push(`info-center logbuffer size ${cfg.bufferSize}`)
+        // Syslog服务器
+        if (cfg.enableSyslog && cfg.syslogServers.length > 0) {
+          cfg.syslogServers.forEach(s => {
+            if (!s.host?.trim()) return
+            const portStr = s.port && s.port !== 514 ? ` -p ${s.port}` : ''
+            const facility = s.facility || 'local7'
+            cmds.push(` info-center loghost ${s.host}${portStr} facility ${facility}`)
+            if (s.level) cmds.push(` info-center source ${s.level} channel loghost`)
+          })
+        }
+        // Flash保存
+        if (cfg.saveToFlash) {
+          cmds.push(' info-center logfile enable', ` info-center logfile size ${cfg.maxLogFiles || 10}`)
+        }
+        // 命令日志记录
+        if (cfg.recordCommands) cmds.push(' info-center source SHELL channel loghost')
+        else cmds.push(' undo info-center source SHELL channel loghost')
+        break
+
+      case 'ruijie':
+        // 信息中心（锐捷叫 logging）
+        if (cfg.enableInfoCenter) cmds.push('logging on')
+        else cmds.push('logging off')
+        // 日志级别
+        if (cfg.defaultLevel) cmds.push(`logging console level ${cfg.defaultLevel}`)
+        // 时间戳
+        switch (cfg.timestampFormat) {
+          case 'date': cmds.push('service timestamps log datetime localtime'); break
+          case 'boot': cmds.push('service timestamps log uptime'); break
+          case 'none': cmds.push('no service timestamps log'); break
+        }
+        // 缓冲区大小
+        if (cfg.bufferSize) cmds.push(`logging buffered ${cfg.bufferSize * 1024}`)
+        // Syslog
+        if (cfg.enableSyslog && cfg.syslogServers.length > 0) {
+          cfg.syslogServers.forEach(s => {
+            if (!s.host?.trim()) return
+            cmds.push(`logging host ${s.host}${s.port ? ` udp-port ${s.port}` : ''}`)
+          })
+        }
+        // Flash保存
+        if (cfg.saveToFlash) cmds.push('logging persistent')
+        // 命令日志
+        if (cfg.recordCommands) cmds.push('archive log config')
+        break
+
+      case 'h3c':
+        // 信息中心
+        if (cfg.enableInfoCenter) cmds.push('info-center enable')
+        else cmds.push('undo info-center enable')
+        // 日志级别
+        if (cfg.defaultLevel) cmds.push(`info-center source default channel loghost level ${cfg.defaultLevel}`)
+        // 时间戳
+        switch (cfg.timestampFormat) {
+          case 'date': cmds.push('info-center timestamp log date'); break
+          case 'boot': cmds.push('info-center timestamp log boot'); break
+          case 'none': cmds.push('info-center timestamp log none'); break
+        }
+        // 缓冲区
+        if (cfg.bufferSize) cmds.push(`info-center logbuffer size ${cfg.bufferSize}`)
+        // Syslog
+        if (cfg.enableSyslog && cfg.syslogServers.length > 0) {
+          cfg.syslogServers.forEach(s => {
+            if (!s.host?.trim()) return
+            const portStr = s.port && s.port !== 514 ? ` -p ${s.port}` : ''
+            cmds.push(` info-center loghost ${s.host}${portStr}`)
+          })
+        }
+        // Flash
+        if (cfg.saveToFlash) {
+          cmds.push(' info-center logfile enable', ` info-center logfile size ${cfg.maxLogFiles || 10}`)
+        }
+        // 命令日志
+        if (cfg.recordCommands) cmds.push(' info-center source COMMAND channel loghost')
+        else cmds.push(' undo info-center source COMMAND channel loghost')
+        break
+    }
+
+    return cmds
+  }
+
   // ========== 自定义命令 ==========
   generateCustom(commands: CustomCommand[]): string[] {
     if (!commands.length) return []
@@ -734,6 +834,7 @@ export class CommandGenerator {
     snmp: SnmpConfig,
     acl: AclConfig,
     ntp: NtpConfig,
+    log: LogConfig,
     customCommands: CustomCommand[]
   ): string {
     const sections: string[][] = [
@@ -747,6 +848,7 @@ export class CommandGenerator {
       this.generateSnmp(snmp),
       this.generateAcl(acl),
       this.generateNtp(ntp),
+      this.generateLog(log),
       this.generateCustom(customCommands)
     ]
 

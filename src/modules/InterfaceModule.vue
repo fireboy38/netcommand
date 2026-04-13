@@ -1,7 +1,7 @@
 <template>
   <div class="module-card">
     <div class="module-title">
-      <el-icon><Network /></el-icon>
+      <el-icon><Connection /></el-icon>
       接口与聚合
       <el-switch v-model="cfg.enabled" size="small" style="margin-left:auto"
         @change="(val: boolean) => store.toggleModule('interfaceConf', val)" />
