@@ -1,7 +1,13 @@
 {
-  "name": "network-config-tool",
+  "name": "netcommand",
+  "description": "新数网络调试工具 - 网络交换机配置命令生成器，支持华为/锐捷/华三等设备",
+  "author": {
+    "name": "四川新数科技有限公司",
+    "url": ""
+  },
+  "license": "MIT",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

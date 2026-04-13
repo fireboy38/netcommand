@@ -1,3 +1,8 @@
+/**
+ * 新数网络调试工具 (NetCommand)
+ * Copyright (c) 2026 四川新数科技有限公司. All rights reserved.
+ * 全局配置状态管理 - Pinia Store
+ */
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type {

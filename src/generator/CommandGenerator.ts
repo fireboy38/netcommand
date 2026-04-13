@@ -6,6 +6,10 @@ import type {
 } from '../types'
 
 /**
+ * 新数网络调试工具 (NetCommand)
+ * Copyright (c) 2026 四川新数科技有限公司. All rights reserved.
+ * 命令生成引擎 - 根据厂商和配置生成对应的CLI命令
+ */
  * 命令生成引擎 - 支持华为/锐捷/华三三种厂商语法
  */
 export class CommandGenerator {

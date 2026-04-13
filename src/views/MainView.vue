@@ -5,7 +5,7 @@
       <div class="top-left">
         <span class="logo">
           <el-icon :size="22" color="#409eff"><Monitor /></el-icon>
-          <h1>NetCommand</h1>
+          <h1>新数网络调试工具</h1>
         </span>
         <el-tag size="small" type="info" effect="plain">交换机配置命令生成器</el-tag>
       </div>
@@ -100,7 +100,10 @@
           </div>
         </nav>
         <div class="sidebar-footer">
-          <span class="version">v1.0.0</span>
+          <div style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;line-height:1.6;">
+            &copy; 2026 四川新数科技<br>
+            <span class="version">v1.0.0</span>
+          </div>
         </div>
       </aside>
 
