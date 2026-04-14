@@ -8,7 +8,7 @@ export type ModuleType =
   | 'stp'         // STP/MSTP配置
   | 'dhcp'        // DHCP配置
   | 'route'       // 路由配置（静态/OSPF/RIP）
-  | 'interface'   // 接口与聚合
+  | 'interfaceConf'   // 接口与聚合
   | 'remote'      // SSH/Telnet
   | 'snmp'        // SNMP管理
   | 'acl'         // ACL/QoS
@@ -90,7 +90,7 @@ export interface OspfConfig {
   enabled: boolean
   processId: number
   routerId: string
-  areas: { areaId: string; networks: { network: string; wildcard: string }[] }
+  areas: { areas: { areaId: string; networks: { network: string; wildcard: string }[] }[] }
   cost?: number
 }
 
@@ -247,4 +247,23 @@ export interface DeviceTab {
 
   // 各模块启用状态
   moduleStates: Record<ModuleType, boolean>
+}
+
+// ===== 用户管理 =====
+export type UserRole = 'admin' | 'user' | 'viewer'
+
+export interface UserInfo {
+  username: string
+  password: string       // 实际存储时使用简单 hash，非明文（前端演示级）
+  role: UserRole
+  realName: string
+  avatar?: string
+  enabled: boolean
+  createdAt: string
+  lastLogin?: string
+}
+
+export interface AuthState {
+  currentUser: UserInfo | null
+  isLoggedIn: boolean
 }

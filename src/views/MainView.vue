@@ -28,7 +28,6 @@
             </span>
             <input
               v-else
-              ref="tabInput"
               v-model="tab.name"
               class="tab-edit-input"
               size="mini"
@@ -76,6 +75,46 @@
         <el-button type="primary" plain @click="copyAllCommands" :icon="CopyDocument">
           复制全部命令
         </el-button>
+
+        <!-- 用户信息 -->
+        <div class="user-area" v-if="authStore.isLoggedIn">
+          <router-link
+            v-if="authStore.canManageUsers"
+            to="/users"
+            class="user-manage-link"
+            title="用户管理"
+          >
+            <el-icon :size="16"><Setting /></el-icon>
+          </router-link>
+          <el-dropdown trigger="hover" @command="handleUserCommand">
+            <span class="user-trigger">
+              <div class="user-avatar" :style="{ background: userAvatarColor }">
+                {{ authStore.currentUser?.realName?.charAt(0) || 'U' }}
+              </div>
+              <span class="user-name">{{ authStore.currentUser?.realName || authStore.currentUser?.username }}</span>
+              <el-icon :size="12" style="margin-left:2px;color:rgba(255,255,255,0.5)"><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item disabled>
+                  <div class="dropdown-user-info">
+                    <strong>{{ authStore.currentUser?.realName }}</strong>
+                    <small>@{{ authStore.currentUser?.username }}</small>
+                    <el-tag size="small" :type="authStore.isAdmin ? 'danger' : 'info'" effect="plain" style="margin-top:2px;">
+                      {{ authStore.roleLabel }}
+                    </el-tag>
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item command="changePassword" divided>
+                  <el-icon><EditPen /></el-icon> 修改密码
+                </el-dropdown-item>
+                <el-dropdown-item command="logout">
+                  <el-icon><SwitchButton /></el-icon> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </header>
 
@@ -136,12 +175,49 @@
         </div>
       </aside>
     </div>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog
+      v-model="pwdDialogVisible"
+      title="修改密码"
+      width="420px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      class="pwd-dialog"
+    >
+      <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdFormRules" label-width="80px" size="large">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入当前密码" />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="6-32 个字符" @input="onPwdInput" />
+          <!-- 密码强度 -->
+          <transition name="slide-down">
+            <div v-if="pwdForm.newPassword" class="pwd-strength-bar">
+              <div class="strength-track">
+                <div class="strength-fill" :style="{ width: pwdStrengthPercent + '%', background: pwdStrengthColor }"></div>
+              </div>
+              <span class="strength-text" :style="{ color: pwdStrengthColor }">{{ pwdStrengthLabel }}</span>
+            </div>
+          </transition>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdDialogVisible = false">取 消</el-button>
+        <el-button type="primary" :loading="pwdSubmitting" @click="handleChangePassword">确认修改</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, markRaw, watch, nextTick } from 'vue'
+import { ref, computed, reactive, markRaw } from 'vue'
+import { useRouter } from 'vue-router'
 import { useConfigStore } from '../store/config'
+import { useAuthStore } from '../store/auth'
 import type { ModuleType, VendorType } from '../types'
 // 各配置模块组件（懒加载）
 import BasicModule from '../modules/BasicModule.vue'
@@ -160,12 +236,15 @@ import { ElMessage } from 'element-plus'
 import {
   Setting, Connection, Share, Monitor, Promotion,
   Lock, View, Filter, Timer, EditPen,
-  CopyDocument, Download, Plus, Tickets, Notebook
+  CopyDocument, Download, Plus, Document,
+  ArrowDown, SwitchButton,
 } from '@element-plus/icons-vue'
+import type { FormInstance, FormRules } from 'element-plus'
 
+const router = useRouter()
 const store = useConfigStore()
+const authStore = useAuthStore()
 const editingTabId = ref('')
-const tabInput = ref<HTMLInputElement[]>()
 
 // 模块列表
 const moduleList = [
@@ -179,7 +258,7 @@ const moduleList = [
   { key: 'snmp' as ModuleType, label: 'SNMP', icon: markRaw(View) },
   { key: 'acl' as ModuleType, label: 'ACL/QoS', icon: markRaw(Filter) },
   { key: 'ntp' as ModuleType, label: 'NTP', icon: markRaw(Timer) },
-  { key: 'log' as ModuleType, label: '日志配置', icon: markRaw(Tickets) },
+  { key: 'log' as ModuleType, label: '日志配置', icon: markRaw(Document) },
   { key: 'custom' as ModuleType, label: '自定义', icon: markRaw(EditPen) },
 ]
 
@@ -217,6 +296,108 @@ function vendorName(vendor?: VendorType): string {
     case 'ruijie': return '锐捷'
     case 'h3c': return '华三'
     default: return ''
+  }
+}
+
+// ===== 用户操作 =====
+const userAvatarColor = computed(() => {
+  const name = authStore.currentUser?.username || ''
+  const colors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#9b59b6']
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i)
+  return colors[hash % colors.length]
+})
+
+function handleUserCommand(command: string) {
+  if (command === 'logout') {
+    authStore.logout()
+    router.push('/login')
+  } else if (command === 'changePassword') {
+    openPwdDialog()
+  }
+}
+
+// ===== 修改密码 =====
+const pwdDialogVisible = ref(false)
+const pwdFormRef = ref<FormInstance>()
+const pwdSubmitting = ref(false)
+
+const pwdForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const confirmPwdValidator = (_rule: any, value: string, callback: any) => {
+  if (value !== pwdForm.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const pwdFormRules: FormRules = {
+  oldPassword: [
+    { required: true, message: '请输入原密码', trigger: 'blur' },
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 32, message: '6-32 个字符', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: confirmPwdValidator, trigger: 'blur' },
+  ],
+}
+
+function openPwdDialog() {
+  Object.assign(pwdForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+  pwdDialogVisible.value = true
+}
+
+// 密码强度（与登录页一致）
+let pwdScore = 0
+function calcPwdStrength(pwd: string): { score: number; label: string; color: string } {
+  if (!pwd.length) return { score: 0, label: '', color: '#dcdfe6' }
+  let s = 0
+  if (pwd.length >= 8) s++
+  if (pwd.length >= 12) s++
+  if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) s++
+  if (/\d/.test(pwd)) s++
+  if (/[^a-zA-Z\d]/.test(pwd)) s++
+  const levels = [
+    { max: 1, label: '弱', color: '#f56c6c' },
+    { max: 2, label: '较弱', color: '#e6a23c' },
+    { max: 3, label: '中等', color: '#409eff' },
+    { max: 4, label: '强', color: '#67c23a' },
+    { max: 5, label: '非常强', color: '#13ce66' },
+  ]
+  const level = levels.find(l => s <= l.max) || levels[levels.length - 1]
+  return { score: s, label: level.label, color: level.color }
+}
+const pwdStrengthPercent = computed(() => (pwdScore / 5) * 100)
+const pwdStrengthLabel = computed(() => calcPwdStrength(pwdForm.newPassword).label)
+const pwdStrengthColor = computed(() => calcPwdStrength(pwdForm.newPassword).color)
+function onPwdInput() { pwdScore = calcPwdStrength(pwdForm.newPassword).score }
+
+async function handleChangePassword() {
+  const valid = await pwdFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  pwdSubmitting.value = true
+  await new Promise(r => setTimeout(r, 400))
+
+  const result = authStore.changeMyPassword(pwdForm.oldPassword, pwdForm.newPassword)
+  pwdSubmitting.value = false
+
+  if (result.success) {
+    ElMessage.success(result.message)
+    pwdDialogVisible.value = false
+    // 自动退出，让用户用新密码重新登录
+    authStore.logout()
+    router.push('/login')
+  } else {
+    ElMessage.error(result.message)
   }
 }
 
@@ -392,6 +573,60 @@ function downloadConfig() {
   justify-content: flex-end;
 }
 
+/* ===== 用户区域 ===== */
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.user-manage-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: rgba(255,255,255,0.55);
+  transition: all 0.15s;
+}
+.user-manage-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  padding: 3px 10px 3px 3px;
+  border-radius: 20px;
+  transition: background 0.15s;
+}
+.user-trigger:hover { background: rgba(255,255,255,0.08); }
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.user-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0;
+}
+
 /* ===== 内容区 ===== */
 .content-area {
   display: flex;
@@ -401,7 +636,8 @@ function downloadConfig() {
 
 /* ===== 左侧导航 ===== */
 .sidebar {
-  width: 170px;
+  width: 162px;
+  min-width: 140px;
   background: var(--bg-sidebar);
   display: flex;
   flex-direction: column;
@@ -459,21 +695,21 @@ function downloadConfig() {
 
 /* ===== 中间配置面板 ===== */
 .config-panel {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
   padding: 20px 24px;
   background: var(--bg-primary);
-  min-width: 420px;
-  max-width: 660px;
+  min-width: 400px;
 }
 
 /* ===== 右侧代码预览 ===== */
 .code-panel {
-  width: 400px;
+  flex: 1 1 auto;
+  min-width: 340px;
+  max-width: 560px;
   background: var(--bg-code);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   border-left: 1px solid #2d2d3f;
 }
 .code-header {
@@ -520,8 +756,45 @@ function downloadConfig() {
 }
 
 /* ===== 响应式适配 ===== */
-@media (max-width: 1100px) {
-  .code-panel { width: 320px; }
-  .config-panel { max-width: 500px; }
+@media (max-width: 1200px) {
+  .code-panel { max-width: 380px; min-width: 280px; }
+  .config-panel { min-width: 360px; }
+}
+@media (max-width: 960px) {
+  .code-panel { display: none; }
+  .config-panel { max-width: none; }
+}
+
+/* ===== 修改密码对话框 ===== */
+.pwd-strength-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}
+.strength-track {
+  flex: 1;
+  height: 3px;
+  background: #e4e7ed;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.strength-text {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 38px;
+  text-align: right;
+}
+.slide-down-enter-active { animation: slideDown 0.25s ease; }
+.slide-down-leave-active { animation: slideDown 0.2s ease reverse; }
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 40px; }
 }
 </style>

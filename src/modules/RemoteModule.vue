@@ -93,6 +93,7 @@
 import { computed } from 'vue'
 import { useConfigStore } from '../store/config'
 import { ElMessage } from 'element-plus'
+import { Delete, Plus, CopyDocument, Lock } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
 const cfg = computed(() => store.activeTab?.remote)

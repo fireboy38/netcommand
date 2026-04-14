@@ -120,6 +120,7 @@
 import { computed } from 'vue'
 import { useConfigStore } from '../store/config'
 import { ElMessage } from 'element-plus'
+import { Delete, Plus, CopyDocument, Monitor } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
 const cfg = computed(() => store.activeTab?.snmp)
@@ -131,7 +132,7 @@ function addCommunity() {
 
 function addTrapServer() {
   if (!cfg.value) return
-  cfg.value.trapServers.push({ host: '', port: 162 })
+  cfg.value.trapServers.push({ host: '', port: String(162) })
 }
 
 async function copyModule(mod: string) {

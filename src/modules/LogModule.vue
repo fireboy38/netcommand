@@ -1,7 +1,7 @@
 <template>
   <div class="module-card">
     <div class="module-title">
-      <el-icon><Tickets /></el-icon>
+      <el-icon><Document /></el-icon>
       日志配置
       <el-switch v-model="cfg.enabled" size="small" style="margin-left:auto"
         @change="(val: boolean) => store.toggleModule('log', val)" />
@@ -124,6 +124,7 @@
 import { computed } from 'vue'
 import { useConfigStore } from '../store/config'
 import { ElMessage } from 'element-plus'
+import { Delete, Plus, CopyDocument, Document } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
 const cfg = computed(() => store.activeTab?.log)

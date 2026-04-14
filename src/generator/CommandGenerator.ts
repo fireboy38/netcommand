@@ -567,7 +567,7 @@ export class CommandGenerator {
         if (cfg.trapEnable) {
           cmds.push(' snmp-agent trap enable')
           cfg.trapServers.forEach(t => {
-            const port = t.port && t.port !== 162 ? ` udp-port ${t.port}` : ''
+            const port = t.port && t.port !== '162' ? ` udp-port ${t.port}` : ''
             cmds.push(` snmp-agent target-host trap address udp-domain ${t.host} params securityname public v2c${port}`)
           })
         } else {
@@ -809,8 +809,8 @@ export class CommandGenerator {
   }
 
   // ========== 自定义命令 ==========
-  generateCustom(commands: CustomCommand[]): string[] {
-    if (!commands.length) return []
+  generateCustom(commands?: CustomCommand[]): string[] {
+    if (!commands || !commands.length) return []
     const result: string[] = []
     commands.forEach(cmd => {
       if (cmd.commands?.trim()) {

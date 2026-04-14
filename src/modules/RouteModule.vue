@@ -127,6 +127,7 @@
 import { computed, ref } from 'vue'
 import { useConfigStore } from '../store/config'
 import { ElMessage } from 'element-plus'
+import { Delete, Plus, CopyDocument, Promotion, Close } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
 const cfg = computed(() => store.activeTab?.route)

@@ -7,9 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfigStore } from './store/config'
-
-const store = useConfigStore()
+// App root component - router-view only
 </script>
 
 <style>

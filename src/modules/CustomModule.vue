@@ -54,6 +54,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { useConfigStore } from '../store/config'
+import { Delete, Plus, CopyDocument, EditPen } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
 

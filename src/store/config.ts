@@ -4,13 +4,8 @@
  * 全局配置状态管理 - Pinia Store
  */
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
-import type {
-  VendorType, ModuleType, DeviceTab,
-  BasicConfig, VlanConfig, StpConfig, DhcpConfig, RouteConfig,
-  InterfaceConfig as InterfaceConfType, RemoteConfig, SnmpConfig, AclConfig,
-  NtpConfig, LogConfig, CustomCommand
-} from '../types'
+import { ref, computed } from 'vue'
+import type { VendorType, ModuleType, DeviceTab } from '../types'
 import { CommandGenerator } from '../generator/CommandGenerator'
 
 // 创建默认设备配置
@@ -74,7 +69,7 @@ export const useConfigStore = defineStore('config', () => {
     return gen.generateAll(
       tab.basic, tab.vlan, tab.stp, tab.dhcp, tab.route,
       tab.interfaceConf, tab.remote, tab.snmp, tab.acl, tab.ntp,
-      tab.customCommands
+      tab.log, tab.customCommands
     )
   })
 

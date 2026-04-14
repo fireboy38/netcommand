@@ -1,0 +1,7 @@
+services:
+  netcommand:
+    build: .
+    container_name: netcommand-web
+    ports:
+      - "8080:80"
+    restart: unless-stopped

@@ -74,9 +74,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useConfigStore } from '../store/config'
 import { ElMessage } from 'element-plus'
+import { Delete, Plus, CopyDocument } from '@element-plus/icons-vue'
 
 const store = useConfigStore()
 const cfg = computed(() => store.activeTab?.vlan)
