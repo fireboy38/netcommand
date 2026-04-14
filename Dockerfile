@@ -6,11 +6,8 @@ COPY . .
 RUN npx vite build --config vite.config.web.ts
 
 FROM nginx:alpine
-LABEL maintainer="fireboy38"
-LABEL description="NetCommand - Network Debug Tool"
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost/ || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD wget -qO- http://localhost/ || exit 1
 CMD ["nginx", "-g", "daemon off;"]
